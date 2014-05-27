@@ -24,7 +24,6 @@ import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
@@ -43,7 +42,6 @@ import org.littleshoot.proxy.HttpFilters;
 import org.littleshoot.proxy.MitmManager;
 import org.littleshoot.proxy.TransportProtocol;
 import org.littleshoot.proxy.UnknownTransportProtocolError;
-import org.slf4j.spi.LocationAwareLogger;
 
 /**
  * <p>
@@ -335,24 +333,10 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
 
     @Override
     protected void exceptionCaught(Throwable cause) {
-        String message = "Caught exception on proxy -> web connection";
-        int logLevel = LocationAwareLogger.WARN_INT;
-        if (cause != null) {
-            String causeMessage = cause.getMessage();
-            if (cause instanceof ConnectException) {
-                logLevel = LocationAwareLogger.DEBUG_INT;
-            } else if (causeMessage != null) {
-                if (causeMessage.contains("Connection reset by peer")) {
-                    logLevel = LocationAwareLogger.DEBUG_INT;
-                } else if (causeMessage.contains("event executor terminated")) {
-                    logLevel = LocationAwareLogger.DEBUG_INT;
-                }
-            }
-        }
-        LOG.log(logLevel, message, cause);
+        LOG.debug("Caught exception on proxy -> web connection", cause);
 
         if (!is(DISCONNECTED)) {
-            LOG.log(logLevel, "Disconnecting open connection");
+            LOG.debug("Disconnecting open connection");
             disconnect();
         }
         // This can happen if we couldn't make the initial connection due
@@ -514,7 +498,6 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
             case TCP:
                 LOG.debug("Connecting to server with TCP");
                 cb.channelFactory(new ChannelFactory<Channel>() {
-                    @Override
                     public Channel newChannel() {
                         return new NioSocketChannel();
                     }
@@ -609,7 +592,6 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                             .clientSslEngineFor(sslEngine.getSession()), false)
                     .addListener(
                             new GenericFutureListener<Future<? super Channel>>() {
-                                @Override
                                 public void operationComplete(
                                         Future<? super Channel> future)
                                         throws Exception {
